@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>El Warsha — Mission 1: Who Are You Talking To?</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0D0A1A;--amber:#FFB830;--amber2:#FFD97D;--teal:#2DD4BF;
+  --purple:#A855F7;--rose:#F43F5E;--green:#10B981;
+  --fh:'Orbitron',monospace;--fb:'Nunito',sans-serif;
+}
+html,body{height:100%;overflow:hidden;font-family:var(--fb);color:#fff;background:var(--bg)}
+#app{width:100%;height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden}
+#scene-bg{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;transition:background .8s ease}
+#scene-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,10,26,.45) 0%,rgba(13,10,26,.82) 100%)}
+#hud{position:relative;z-index:20;display:flex;align-items:center;gap:10px;padding:8px 16px;background:rgba(13,10,26,.95);border-bottom:1px solid rgba(255,184,48,.15);backdrop-filter:blur(8px);flex-shrink:0}
+#hud-title{font-family:var(--fh);font-size:8px;letter-spacing:3px;color:var(--amber);opacity:.85}
+#hud-sc{font-family:var(--fh);font-size:11px;color:var(--amber2);margin-left:auto}
+.hb{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);transition:all .4s}
+.hb.earned{background:linear-gradient(135deg,var(--amber),#b45309);border-color:var(--amber);box-shadow:0 0 10px rgba(255,184,48,.5);animation:bpop .5s cubic-bezier(.34,1.56,.64,1)}
+#prog-bar{height:3px;background:rgba(255,255,255,.07);flex-shrink:0;position:relative;z-index:20}
+#prog-fill{height:100%;background:linear-gradient(90deg,var(--amber),var(--amber2));width:0%;transition:width .7s ease;box-shadow:0 0 8px var(--amber)}
+#content{position:relative;z-index:10;flex:1;overflow-y:auto;overflow-x:hidden;padding:0 0 8px;scroll-behavior:smooth}
+#content::-webkit-scrollbar{width:3px}
+#content::-webkit-scrollbar-thumb{background:rgba(255,184,48,.25);border-radius:2px}
+#nav{position:relative;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(13,10,26,.97);border-top:1px solid rgba(255,184,48,.1);backdrop-filter:blur(10px);flex-shrink:0;min-height:60px}
+.nb{font-family:var(--fh);font-size:10px;letter-spacing:1.5px;padding:9px 20px;border-radius:10px;border:none;cursor:pointer;transition:all .2s;text-transform:uppercase}
+.nb.p{background:var(--amber);color:var(--bg);box-shadow:0 0 16px rgba(255,184,48,.3)}
+.nb.p:hover:not(:disabled){background:var(--amber2);transform:translateY(-1px)}
+.nb.p:disabled{background:#374151;box-shadow:none;cursor:not-allowed;opacity:.45;color:#9CA3AF}
+.nb.s{background:transparent;color:#9CA3AF;border:1px solid rgba(255,255,255,.1)}
+.nb.s:hover:not(:disabled){color:#fff;border-color:rgba(255,255,255,.3)}
+.nb.s:disabled{opacity:.2;cursor:not-allowed}
+#ndots{display:flex;gap:5px;align-items:center}
+.nd{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.13);transition:all .3s}
+.nd.active{background:var(--amber);box-shadow:0 0 5px var(--amber);width:18px;border-radius:3px}
+.nd.done{background:rgba(255,184,48,.35)}
+@keyframes bpop{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideL{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideR{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}
+@keyframes pop{from{transform:scale(.75);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@keyframes glow{0%,100%{opacity:.75}50%{opacity:1}}
+@keyframes loadb{from{width:0}to{width:100%}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,184,48,.4)}70%{box-shadow:0 0 0 8px rgba(255,184,48,0)}}
+
+/* CHARACTER AVATARS - CSS drawn */
+.char-wrap{position:absolute;bottom:70px;pointer-events:none;z-index:2}
+.char-wrap.left{left:-10px;animation:slideL .5s ease both}
+.char-wrap.right{right:-10px;animation:slideR .5s ease both}
+.char-svg{animation:float 3.5s ease-in-out infinite;filter:drop-shadow(0 6px 20px rgba(0,0,0,.65))}
+.char-wrap.right .char-svg{animation:float 3.5s .5s ease-in-out infinite}
+
+.vn-scene{position:relative;width:100%;min-height:calc(100vh - 200px);display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+.vn-dialogue{position:relative;z-index:5;margin:0 10px 8px;background:rgba(13,10,26,.9);border:1px solid rgba(255,184,48,.22);border-radius:14px;padding:14px 16px;backdrop-filter:blur(14px);animation:up .4s ease both}
+.vn-dialogue::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,184,48,.55),transparent);border-radius:14px 14px 0 0}
+.vn-speaker{font-family:var(--fh);font-size:8px;letter-spacing:2px;margin-bottom:5px;text-transform:uppercase;font-weight:700}
+.vn-line{font-size:14px;line-height:1.65;color:rgba(255,255,255,.92)}
+.vn-scenario{position:relative;z-index:5;margin:0 10px 7px;background:rgba(13,10,26,.72);border-left:3px solid rgba(255,184,48,.38);border-radius:0 10px 10px 0;padding:9px 13px;font-size:12px;color:rgba(255,255,255,.75);line-height:1.6;backdrop-filter:blur(8px);animation:up .4s .1s ease both}
+.vn-question{position:relative;z-index:5;margin:0 14px 7px;font-family:var(--fh);font-size:9px;letter-spacing:.5px;color:var(--amber2);animation:up .4s .15s ease both}
+.snote-vn{font-size:11px;color:#6B7280;font-style:italic;padding:5px 13px;margin:0 10px 7px;border-left:2px solid rgba(255,255,255,.08);position:relative;z-index:5}
+
+.choices{position:relative;z-index:5;display:flex;flex-direction:column;gap:7px;padding:0 10px 10px}
+.choice{background:rgba(13,10,26,.87);border:1px solid rgba(255,255,255,.12);border-radius:11px;padding:12px 15px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .2s;color:rgba(255,255,255,.9);font-size:13px;text-align:left;width:100%;font-family:var(--fb);line-height:1.4;backdrop-filter:blur(8px);animation:up .35s ease both}
+.choice:nth-child(1){animation-delay:.05s}.choice:nth-child(2){animation-delay:.1s}.choice:nth-child(3){animation-delay:.15s}.choice:nth-child(4){animation-delay:.2s}
+.choice:hover:not(:disabled){border-color:rgba(255,184,48,.55);background:rgba(255,184,48,.09);transform:translateX(4px)}
+.clbl{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:9px;font-weight:700;flex-shrink:0;transition:all .2s}
+.choice:hover:not(:disabled) .clbl{border-color:var(--amber);color:var(--amber)}
+.choice.correct{border-color:var(--green);background:rgba(16,185,129,.1);pointer-events:none}
+.choice.correct .clbl{background:var(--green);border-color:var(--green);color:var(--bg)}
+.choice.wrong{border-color:rgba(244,63,94,.45);background:rgba(244,63,94,.07);pointer-events:none;opacity:.5}
+.vn-fb{position:relative;z-index:5;margin:0 10px 8px;padding:11px 14px;border-radius:11px;font-size:13px;line-height:1.6;animation:up .4s ease both;backdrop-filter:blur(8px)}
+.vn-fb.ok{background:rgba(16,185,129,.09);border:1px solid rgba(16,185,129,.38);color:#a7f3d0}
+.vn-fb.bad{background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.32);color:#fca5a5}
+.vn-fb .hint{margin-top:5px;font-size:11px;color:#9CA3AF;font-style:italic}
+
+.fullscreen{position:relative;z-index:5;display:flex;flex-direction:column;align-items:center;padding:18px 14px;min-height:calc(100vh - 200px)}
+.boot-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 200px);text-align:center;position:relative;z-index:5;padding:16px}
+.logo{font-family:var(--fh);font-size:10px;letter-spacing:7px;color:var(--amber);animation:glow 2s ease-in-out infinite;margin-bottom:8px}
+.gtitle{font-family:var(--fh);font-size:clamp(28px,9vw,48px);font-weight:900;color:#fff;letter-spacing:3px;line-height:1.05;text-shadow:0 0 35px rgba(255,184,48,.45);margin-bottom:4px}
+.gsub{font-family:var(--fh);font-size:10px;letter-spacing:3px;color:var(--amber2);margin-bottom:22px}
+.bbar{width:160px;height:3px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;margin-bottom:6px}
+.bfill{height:100%;background:linear-gradient(90deg,var(--amber),var(--amber2));animation:loadb 1.8s ease forwards;box-shadow:0 0 7px var(--amber)}
+.bcap{font-size:10px;letter-spacing:2px;color:#6B7280;text-transform:uppercase}
+
+.panel{background:rgba(13,10,26,.84);border:1px solid rgba(255,184,48,.18);border-radius:14px;padding:14px 16px;width:100%;max-width:680px;backdrop-filter:blur(12px);position:relative;overflow:hidden;margin-bottom:9px}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,184,48,.45),transparent)}
+.mhdr{padding:12px 14px 0;position:relative;z-index:5}
+.mlbl{font-family:var(--fh);font-size:8px;letter-spacing:2px;color:var(--amber);opacity:.7;margin-bottom:3px}
+.mtitle{font-family:var(--fh);font-size:clamp(12px,3.5vw,17px);font-weight:700;color:#fff;margin-bottom:5px}
+.spill{display:inline-block;background:rgba(255,184,48,.09);border:1px solid rgba(255,184,48,.26);border-radius:20px;padding:3px 10px;font-size:10px;color:var(--amber);letter-spacing:.8px}
+
+/* REFLECT OPTIONS */
+.ropts{display:flex;flex-direction:column;gap:7px;padding:0 10px;position:relative;z-index:5}
+.ropt{background:rgba(13,10,26,.87);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;cursor:pointer;font-size:13px;color:rgba(255,255,255,.88);text-align:left;width:100%;transition:all .2s;font-family:var(--fb);animation:up .35s ease both;backdrop-filter:blur(8px)}
+.ropt:hover:not(:disabled):not(.sel){border-color:rgba(168,85,247,.5);background:rgba(168,85,247,.07);transform:translateX(4px)}
+.ropt.sel{border-color:var(--purple);background:rgba(168,85,247,.12);color:#fff}
+.rconf{background:var(--purple);color:#fff;border:none;border-radius:10px;padding:12px;font-family:var(--fh);font-size:10px;letter-spacing:1.5px;cursor:pointer;width:calc(100% - 20px);margin:8px 10px 0;display:block;transition:all .25s}
+.rconf:hover{background:#c084fc}
+.rsaved{margin:8px 10px 0;padding:10px;background:rgba(168,85,247,.07);border:1px solid rgba(168,85,247,.28);border-radius:10px;color:var(--purple);font-size:13px;text-align:center;animation:up .4s ease both;position:relative;z-index:5}
+
+/* TEXT INPUT */
+.tinput-wrap{padding:0 10px;position:relative;z-index:5;margin-bottom:8px}
+.tinput{width:100%;background:rgba(13,10,26,.9);border:1px solid rgba(255,255,255,.14);border-radius:11px;padding:13px 15px;color:#fff;font-family:var(--fb);font-size:13px;resize:none;min-height:90px;transition:border-color .2s;outline:none;line-height:1.6}
+.tinput:focus{border-color:rgba(255,184,48,.45)}
+.tinput::placeholder{color:rgba(255,255,255,.25)}
+.tconf{background:var(--amber);color:var(--bg);border:none;border-radius:10px;padding:11px;font-family:var(--fh);font-size:10px;letter-spacing:1.5px;cursor:pointer;width:calc(100% - 20px);margin:7px 10px 0;display:block;transition:all .25s;font-weight:700}
+.tconf:hover{background:var(--amber2)}
+.tconf:disabled{background:#374151;cursor:not-allowed;opacity:.4;color:#9CA3AF}
+.tsaved{margin:7px 10px 0;padding:10px;background:rgba(255,184,48,.07);border:1px solid rgba(255,184,48,.25);border-radius:10px;color:var(--amber2);font-size:12px;text-align:center;animation:up .4s ease both;position:relative;z-index:5}
+
+/* OUTPUT DOC */
+.obt{display:inline-block;font-family:var(--fh);font-size:8px;letter-spacing:3px;color:var(--amber);background:rgba(255,184,48,.07);border:1px solid rgba(255,184,48,.22);padding:4px 10px;border-radius:20px;margin-bottom:6px}
+.otitle{font-family:var(--fh);font-size:clamp(15px,5vw,20px);font-weight:700;color:#fff;margin-bottom:4px}
+.ointro{font-size:12px;color:#9CA3AF;margin-bottom:10px}
+.pbsec{background:rgba(13,10,26,.92);border:1px solid rgba(255,184,48,.14);border-radius:12px;padding:13px 15px;width:100%;margin-bottom:8px;animation:up .4s ease both}
+.pblbl{font-family:var(--fh);font-size:8px;letter-spacing:2px;color:var(--amber);margin-bottom:4px}
+.pbval{font-size:13px;color:#fff;font-weight:600;margin-bottom:2px;line-height:1.5}
+.pbdesc{font-size:11px;color:#9CA3AF;line-height:1.5}
+
+/* FINAL */
+.finalwrap{display:flex;flex-direction:column;align-items:center;text-align:center;padding:16px;position:relative;z-index:5;animation:up .5s ease both}
+.ficon{font-size:62px;filter:drop-shadow(0 0 18px rgba(255,184,48,.55));animation:float 3s ease-in-out infinite;margin-bottom:8px}
+.ftitle{font-family:var(--fh);font-size:clamp(13px,4.5vw,20px);font-weight:700;color:var(--amber);letter-spacing:3px;text-transform:uppercase;margin-bottom:4px}
+.fsub{font-size:12px;color:#9CA3AF;max-width:320px;margin:0 auto 14px}
+.allb{display:flex;gap:10px;justify-content:center;margin-bottom:14px;flex-wrap:wrap}
+.abi{display:flex;flex-direction:column;align-items:center;gap:4px}
+.abic{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#4a1e00,var(--amber));display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 10px rgba(255,184,48,.3)}
+.abn{font-family:var(--fh);font-size:7px;letter-spacing:.6px;color:#9CA3AF;text-align:center;max-width:58px;text-transform:uppercase}
+.skill-pills{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:12px 0}
+.spill2{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;font-family:var(--fh);letter-spacing:.5px}
+.spill2.exploring{background:rgba(255,184,48,.1);border:1px solid rgba(255,184,48,.3);color:var(--amber)}
+.spill2.building{background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.3);color:#c084fc}
+.btn-dl{background:transparent;border:1.5px solid var(--amber);color:var(--amber);border-radius:10px;padding:11px 24px;font-family:var(--fh);font-size:10px;letter-spacing:1.5px;cursor:pointer;transition:all .25s;margin-top:6px}
+.btn-dl:hover{background:rgba(255,184,48,.1)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="scene-bg"></div>
+  <div id="hud">
+    <span id="hud-title">EL WARSHA · MISSION 1 OF 3</span>
+    <div id="bstrip" style="display:flex;gap:6px;margin-left:10px"></div>
+    <span id="hud-sc">⬡ <b id="hsc">0</b> pts</span>
+  </div>
+  <div id="prog-bar"><div id="prog-fill"></div></div>
+  <div id="content"></div>
+  <div id="nav">
+    <button class="nb s" id="btn-back" onclick="G.back()" disabled>← Back</button>
+    <div id="ndots"></div>
+    <button class="nb p" id="btn-next" onclick="G.next()" disabled>Enter ▶</button>
+  </div>
+</div>
+<script>
+/* ── BACKGROUNDS (CSS gradients — no external images needed) ── */
+const BG={
+  warsha:'radial-gradient(ellipse at 20% 50%, #2D1B00 0%, #0D0A1A 60%), repeating-linear-gradient(45deg, rgba(255,184,48,.03) 0px, rgba(255,184,48,.03) 1px, transparent 1px, transparent 20px)',
+  street:'radial-gradient(ellipse at 70% 30%, #1A0A2E 0%, #0D0A1A 70%), repeating-linear-gradient(90deg, rgba(168,85,247,.04) 0px, rgba(168,85,247,.04) 1px, transparent 1px, transparent 30px)',
+  rooftop:'radial-gradient(ellipse at 50% 0%, #001A2E 0%, #0D0A1A 60%), linear-gradient(180deg, rgba(45,212,191,.06) 0%, transparent 50%)',
+  reveal:'radial-gradient(ellipse at 50% 50%, #1A1500 0%, #0D0A1A 65%), radial-gradient(circle at 80% 20%, rgba(255,184,48,.08) 0%, transparent 40%)'
+};
+function setBG(k){document.getElementById('scene-bg').style.background=BG[k]||BG.warsha}
+
+/* ── CHARACTER SVGs (inline, Egyptian-inspired art style) ── */
+function charDina(side){
+  return `<div class="char-wrap ${side}">
+  <svg class="char-svg" width="140" height="260" viewBox="0 0 140 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- body -->
+    <rect x="42" y="120" width="56" height="95" rx="8" fill="#1a0a2e"/>
+    <!-- jacket -->
+    <rect x="38" y="118" width="64" height="50" rx="6" fill="#2D1B4E"/>
+    <rect x="38" y="118" width="64" height="50" rx="6" fill="none" stroke="rgba(255,184,48,.4)" stroke-width="1"/>
+    <!-- arms -->
+    <rect x="18" y="120" width="24" height="60" rx="8" fill="#C9956B"/>
+    <rect x="98" y="120" width="24" height="60" rx="8" fill="#C9956B"/>
+    <!-- neck -->
+    <rect x="60" y="95" width="20" height="30" rx="6" fill="#C9956B"/>
+    <!-- head -->
+    <ellipse cx="70" cy="82" rx="32" ry="36" fill="#C9956B"/>
+    <!-- hair hijab -->
+    <ellipse cx="70" cy="62" rx="33" ry="22" fill="#1a0a2e"/>
+    <rect x="38" y="62" width="64" height="45" rx="4" fill="#1a0a2e"/>
+    <!-- face details -->
+    <ellipse cx="59" cy="85" rx="5" ry="6" fill="#fff" opacity=".9"/>
+    <ellipse cx="81" cy="85" rx="5" ry="6" fill="#fff" opacity=".9"/>
+    <ellipse cx="60" cy="86" rx="3" ry="3.5" fill="#3D2B1F"/>
+    <ellipse cx="82" cy="86" rx="3" ry="3.5" fill="#3D2B1F"/>
+    <path d="M63 97 Q70 102 77 97" stroke="#8B5E3C" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <!-- amber glow accent -->
+    <ellipse cx="70" cy="62" rx="33" ry="22" fill="none" stroke="rgba(255,184,48,.3)" stroke-width="1.5"/>
+    <!-- badge on jacket -->
+    <rect x="52" y="128" width="16" height="10" rx="3" fill="rgba(255,184,48,.25)" stroke="rgba(255,184,48,.5)" stroke-width=".8"/>
+    <text x="60" y="136" font-size="5" fill="var(--amber)" text-anchor="middle" font-family="Orbitron">EW</text>
+    <!-- legs -->
+    <rect x="50" y="210" width="17" height="45" rx="5" fill="#111"/>
+    <rect x="73" y="210" width="17" height="45" rx="5" fill="#111"/>
+    <rect x="47" y="248" width="22" height="10" rx="4" fill="#333"/>
+    <rect x="71" y="248" width="22" height="10" rx="4" fill="#333"/>
+  </svg></div>`;
+}
+
+function charKarim(side){
+  return `<div class="char-wrap ${side}">
+  <svg class="char-svg" width="130" height="255" viewBox="0 0 130 255" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- body -->
+    <rect x="35" y="115" width="60" height="95" rx="8" fill="#0a1a2e"/>
+    <!-- hoodie -->
+    <rect x="30" y="112" width="70" height="55" rx="8" fill="#1E3A5F"/>
+    <rect x="30" y="112" width="70" height="55" rx="8" fill="none" stroke="rgba(45,212,191,.35)" stroke-width="1"/>
+    <!-- hood string detail -->
+    <line x1="57" y1="130" x2="57" y2="145" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>
+    <line x1="73" y1="130" x2="73" y2="145" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>
+    <!-- arms -->
+    <rect x="12" y="114" width="22" height="62" rx="8" fill="#B8844A"/>
+    <rect x="96" y="114" width="22" height="62" rx="8" fill="#B8844A"/>
+    <!-- hand holding pencil -->
+    <rect x="100" y="168" width="14" height="6" rx="3" fill="#B8844A"/>
+    <rect x="111" y="160" width="4" height="20" rx="2" fill="#F5E642" transform="rotate(15 113 170)"/>
+    <!-- neck -->
+    <rect x="54" y="90" width="22" height="28" rx="6" fill="#B8844A"/>
+    <!-- head -->
+    <ellipse cx="65" cy="78" rx="30" ry="33" fill="#B8844A"/>
+    <!-- hair -->
+    <ellipse cx="65" cy="55" rx="30" ry="14" fill="#1a1200"/>
+    <rect x="36" y="55" width="58" height="18" rx="4" fill="#1a1200"/>
+    <!-- face -->
+    <ellipse cx="55" cy="78" rx="5" ry="6" fill="#fff" opacity=".9"/>
+    <ellipse cx="75" cy="78" rx="5" ry="6" fill="#fff" opacity=".9"/>
+    <ellipse cx="55.5" cy="79" rx="3" ry="3.5" fill="#2a1a0a"/>
+    <ellipse cx="75.5" cy="79" rx="3" ry="3.5" fill="#2a1a0a"/>
+    <path d="M59 90 Q65 95 71 90" stroke="#7a4a2a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <!-- slight smile / curious look -->
+    <path d="M48 68 Q52 65 56 68" stroke="#8B6543" stroke-width="1" fill="none" stroke-linecap="round"/>
+    <path d="M74 68 Q78 65 82 68" stroke="#8B6543" stroke-width="1" fill="none" stroke-linecap="round"/>
+    <!-- teal accent glow -->
+    <ellipse cx="65" cy="78" rx="30" ry="33" fill="none" stroke="rgba(45,212,191,.15)" stroke-width="1"/>
+    <!-- legs -->
+    <rect x="42" y="205" width="18" height="45" rx="5" fill="#0a0f1a"/>
+    <rect x="70" y="205" width="18" height="45" rx="5" fill="#0a0f1a"/>
+    <rect x="39" y="242" width="23" height="10" rx="4" fill="#1a2235"/>
+    <rect x="68" y="242" width="23" height="10" rx="4" fill="#1a2235"/>
+  </svg></div>`;
+}
+
+function charLayla(side){
+  return `<div class="char-wrap ${side}">
+  <svg class="char-svg" width="130" height="255" viewBox="0 0 130 255" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- body -->
+    <rect x="35" y="118" width="60" height="90" rx="8" fill="#0f1a0f"/>
+    <!-- blazer -->
+    <rect x="30" y="115" width="70" height="52" rx="7" fill="#0F3D2A"/>
+    <rect x="30" y="115" width="70" height="52" rx="7" fill="none" stroke="rgba(16,185,129,.35)" stroke-width="1"/>
+    <!-- lapels -->
+    <path d="M65 115 L52 130 L62 167" stroke="rgba(16,185,129,.4)" stroke-width="1" fill="none"/>
+    <path d="M65 115 L78 130 L68 167" stroke="rgba(16,185,129,.4)" stroke-width="1" fill="none"/>
+    <!-- arms -->
+    <rect x="12" y="116" width="22" height="58" rx="8" fill="#A87650"/>
+    <rect x="96" y="116" width="22" height="58" rx="8" fill="#A87650"/>
+    <!-- clipboard in hand -->
+    <rect x="98" y="140" width="18" height="24" rx="3" fill="#F5F0E8" opacity=".9"/>
+    <rect x="100" y="135" width="14" height="6" rx="2" fill="#888"/>
+    <line x1="101" y1="148" x2="113" y2="148" stroke="#999" stroke-width="1"/>
+    <line x1="101" y1="153" x2="113" y2="153" stroke="#999" stroke-width="1"/>
+    <line x1="101" y1="158" x2="109" y2="158" stroke="#999" stroke-width="1"/>
+    <!-- neck -->
+    <rect x="54" y="92" width="22" height="27" rx="6" fill="#A87650"/>
+    <!-- head -->
+    <ellipse cx="65" cy="80" rx="29" ry="32" fill="#A87650"/>
+    <!-- hair -->
+    <ellipse cx="65" cy="58" rx="29" ry="18" fill="#1a0a00"/>
+    <rect x="37" y="68" width="56" height="20" rx="4" fill="#1a0a00"/>
+    <path d="M37 78 Q32 90 38 105" stroke="#1a0a00" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <path d="M93 78 Q98 90 92 105" stroke="#1a0a00" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <!-- face -->
+    <ellipse cx="55" cy="80" rx="5" ry="6" fill="#fff" opacity=".92"/>
+    <ellipse cx="75" cy="80" rx="5" ry="6" fill="#fff" opacity=".92"/>
+    <ellipse cx="55.5" cy="81" rx="3" ry="3.5" fill="#2a1a0a"/>
+    <ellipse cx="75.5" cy="81" rx="3" ry="3.5" fill="#2a1a0a"/>
+    <path d="M59 92 Q65 97 71 92" stroke="#7a4a2a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <!-- glasses -->
+    <rect x="48" y="75" width="15" height="11" rx="5" fill="none" stroke="rgba(16,185,129,.7)" stroke-width="1.5"/>
+    <rect x="67" y="75" width="15" height="11" rx="5" fill="none" stroke="rgba(16,185,129,.7)" stroke-width="1.5"/>
+    <line x1="63" y1="80" x2="67" y2="80" stroke="rgba(16,185,129,.7)" stroke-width="1.5"/>
+    <!-- green accent -->
+    <ellipse cx="65" cy="80" rx="29" ry="32" fill="none" stroke="rgba(16,185,129,.12)" stroke-width="1"/>
+    <!-- legs -->
+    <rect x="42" y="205" width="18" height="45" rx="5" fill="#0a1505"/>
+    <rect x="70" y="205" width="18" height="45" rx="5" fill="#0a1505"/>
+    <rect x="39" y="242" width="23" height="10" rx="4" fill="#1a2a1a"/>
+    <rect x="68" y="242" width="23" height="10" rx="4" fill="#1a2a1a"/>
+  </svg></div>`;
+}
+
+const CLR={DINA:'#FFB830',KARIM:'#2DD4BF',LAYLA:'#10B981'};
+const CNAME={DINA:'Dina — Creative Director',KARIM:'Karim — Fellow Recruit',LAYLA:'Layla — Strategist'};
+
+function dlg(who,line,delay=0){
+  return `<div class="vn-dialogue" style="animation-delay:${delay}s">
+    <div class="vn-speaker" style="color:${CLR[who]}">${CNAME[who]}</div>
+    <div class="vn-line">${line}</div>
+  </div>`;
+}
+function opts(list,sel,correct,answered){
+  return list.map(o=>{
+    let c='';
+    if(answered){c=o.id===correct?'correct':o.id===sel?'wrong':'';}
+    return `<button class="choice ${c}" onclick="pick('${o.id}','${correct}')" ${answered?'disabled':''}>
+      <div class="clbl">${o.id.toUpperCase()}</div><div>${o.text}</div>
+    </button>`;
+  }).join('');
+}
+function fb(ok,okM,badM,hint=''){
+  return `<div class="vn-fb ${ok?'ok':'bad'}">${ok?'✅ '+okM:'❌ '+badM}${!ok&&hint?`<div class="hint">💡 ${hint}</div>`:''}</div>`;
+}
+
+/* ── STATE ── */
+const S={sc:0,pts:0,badges:[],
+  a1:null,c1:false,
+  ws:null,wsSaved:false,
+  feel:null,feelSaved:false,
+  a2:null,c2:false,
+  inp:null,inpSaved:false,
+  a3:null,c3:false
+};
+
+/* ── SCREENS LIST ── */
+const SCREENS=['boot','welcome','scene1','q1','scene2','reflect1','scene3','q2','scene4','input1','scene5','q3','output','final'];
+
+function updHUD(){
+  const p=Math.round((S.sc/(SCREENS.length-1))*100);
+  document.getElementById('prog-fill').style.width=p+'%';
+  document.getElementById('hsc').textContent=S.pts;
+  const total=SCREENS.length;
+  const seg=Math.floor(SCREENS.length/5);
+  document.getElementById('ndots').innerHTML=Array.from({length:5},(_,i)=>{
+    const pos=i*seg;
+    const a=S.sc>=pos&&S.sc<pos+seg;
+    const d=S.sc>=pos+seg;
+    return `<div class="nd ${a?'active':''} ${d?'done':''}"></div>`;
+  }).join('');
+  const all=[{i:'🎨',l:'Audience'},{i:'💡',l:'Insight'},{i:'✍️',l:'Voice'}];
+  document.getElementById('bstrip').innerHTML=all.map(b=>`<div class="hb ${S.badges.includes(b.i)?'earned':''}" title="${b.l}">${b.i}</div>`).join('');
+}
+function setNav(back,nxt,ntxt){
+  document.getElementById('btn-back').disabled=!back;
+  document.getElementById('btn-next').disabled=!nxt;
+  document.getElementById('btn-next').textContent=ntxt||(S.sc>=SCREENS.length-1?'Finish':'Continue →');
+}
+function pick(id,correct){
+  const k=SCREENS[S.sc];
+  if(k==='q1'&&!S.a1){S.a1=id;S.c1=id===correct;if(S.c1){S.pts+=10;}render();}
+  else if(k==='q2'&&!S.a2){S.a2=id;S.c2=id===correct;if(S.c2){S.pts+=10;}render();}
+  else if(k==='q3'&&!S.a3){S.a3=id;S.c3=id===correct;if(S.c3){S.pts+=10;}render();}
+}
+let _rsel={};
+function pickR(f,id,btn){
+  _rsel[f]=id;
+  document.querySelectorAll(`.ropt[data-f="${f}"]`).forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  const cb=document.getElementById('rconf_'+f);if(cb)cb.style.display='block';
+}
+function saveR(f){
+  const id=_rsel[f];if(!id)return;
+  if(f==='ws'){S.ws=id;S.wsSaved=true;S.pts+=15;if(!S.badges.includes('🎨'))S.badges.push('🎨');}
+  else if(f==='feel'){S.feel=id;S.feelSaved=true;S.pts+=10;}
+  render();
+}
+function saveInp(f){
+  const el=document.getElementById('tinp_'+f);
+  if(!el||!el.value.trim())return;
+  if(f==='inp1'){S.inp=el.value.trim();S.inpSaved=true;S.pts+=20;if(!S.badges.includes('✍️'))S.badges.push('✍️');}
+  render();
+}
+
+const C=document.getElementById('content');
+function render(){
+  const k=SCREENS[S.sc];RS[k]&&RS[k]();
+  C.scrollTop=0;
+  updHUD();
+}
+const G={
+  next(){if(S.sc<SCREENS.length-1){S.sc++;render();}},
+  back(){if(S.sc>0){S.sc--;render();}}
+};
+
+/* ── AUDIENCE DATA ── */
+const WS_OPTS={
+  youth:{l:'🧑‍🤝‍🧑 Young people aged 14–25',d:'They need to feel seen, not lectured. They respond to honesty, humour, and realness.'},
+  parents:{l:'👨‍👩‍👧 Parents and families',d:'They trust schools and experts. Formal tone, clear facts, practical advice.'},
+  teachers:{l:'🏫 Teachers and school staff',d:'They want research-backed content. Professional tone, concrete examples.'},
+  everyone:{l:'🌍 Everyone — the wider public',d:'Broad message — but "everyone" is often no one. The message loses sharpness.'}
+};
+const FEEL_OPTS={
+  seen:{l:'🫂 Understood and not alone',d:'They recognise themselves in the message.'},
+  empowered:{l:'💪 Able to do something about it',d:'They leave with a next step, not just feelings.'},
+  shocked:{l:'😮 Surprised by the facts',d:'A statistic or truth they didn\'t know stops them scrolling.'},
+  hopeful:{l:'🌱 That things can get better',d:'A positive emotional ending — the world feels a bit lighter.'}
+};
+
+/* ── RENDER SCREENS ── */
+const RS={
+
+boot(){
+  setBG('warsha');
+  C.innerHTML=`<div class="boot-wrap">
+    <div class="logo">◈ N O O R · EL WARSHA</div>
+    <div class="gtitle">WHO ARE<br>YOU TALKING<br>TO?</div>
+    <div class="gsub">MISSION 1 OF 3 · CREATORS & STORYTELLERS</div>
+    <div class="bbar"><div class="bfill"></div></div>
+    <div class="bcap">Loading El Warsha…</div>
+  </div>`;
+  setNav(false,true,'Enter ▶');
+},
+
+welcome(){
+  setBG('warsha');
+  C.innerHTML=`<div class="vn-scene">
+    ${charDina('left')}
+    <div class="vn-dialogue">
+      <div class="vn-speaker" style="color:${CLR.DINA}">${CNAME.DINA}</div>
+      <div class="vn-line">أهلاً — welcome to El Warsha. You just got in. That's not easy.</div>
+    </div>
+    <div class="vn-scenario"><strong>El Warsha</strong> is a real creative studio in Cairo — designers, filmmakers, writers, photographers, all working on projects that matter to people's lives. You're the newest recruit. Your first assignment starts today.</div>
+    ${dlg('DINA',"Before you make anything — you need to understand one thing. Great creative work doesn't start with a cool idea. It starts with a real person.",.15)}
+  </div>`;
+  setNav(true,true);
+},
+
+scene1(){
+  setBG('street');
+  C.innerHTML=`<div class="vn-scene">
+    ${charLayla('right')}
+    <div class="snote-vn">📍 The briefing room. A local NGO has just sent El Warsha a brief.</div>
+    <div class="vn-dialogue">
+      <div class="vn-speaker" style="color:${CLR.LAYLA}">${CNAME.LAYLA}</div>
+      <div class="vn-line">I'm Layla. I do research here — basically I figure out who we're talking to before anyone picks up a camera or opens Illustrator.</div>
+    </div>
+    <div class="vn-scenario">The brief: a youth mental health NGO called <strong>Nafas</strong> (نَفَس — "breath") wants to launch a campaign. Their mission is to reach young Egyptians who are struggling — but feel embarrassed to ask for help. The campaign should make them feel less alone.</div>
+    ${dlg('LAYLA',"The first question we always ask at El Warsha is: who, exactly, are we making this for?",.15)}
+  </div>`;
+  setNav(true,true);
+},
+
+q1(){
+  setBG('street');
+  const ans=S.a1!==null;
+  C.innerHTML=`
+    <div class="mhdr"><div class="mlbl">● QUESTION 1</div><div class="mtitle">Who is Nafas's campaign for?</div><span class="spill">Skill: Problem Solving</span></div>
+    <div class="vn-scene" style="min-height:180px">
+      ${charLayla('right')}
+      <div class="vn-scenario">Nafas wants to reach young Egyptians struggling with their mental health — but feeling too embarrassed to seek help. Think about who will actually <em>see and feel</em> this campaign.</div>
+      <div class="vn-question">WHO SHOULD THIS CAMPAIGN SPEAK DIRECTLY TO?</div>
+    </div>
+    <div class="choices">${opts([
+      {id:'a',text:'Everyone in Egypt — mental health affects all ages'},
+      {id:'b',text:'Young people aged 14–25 who feel alone but won\'t say it'},
+      {id:'c',text:'Parents, so they can help their children'},
+      {id:'d',text:'Doctors and therapists who treat mental health'}
+    ],S.a1,'b',ans)}</div>
+    ${ans?fb(S.c1,
+      "Exactly. When you speak to everyone, you reach no one. Nafas needs a specific person to imagine when they create — a 17-year-old scrolling alone at midnight is not the same as a 45-year-old parent.",
+      "This audience is too broad or indirect.",
+      S.a1==='a'?"Broad campaigns feel like they're talking to a wall. Who is the specific person struggling right now?":S.a1==='c'?"Parents are important — but they're not the ones who feel embarrassed. The campaign needs to speak to the person in pain.":"Doctors are already informed. The gap is in reaching young people before they ever see a doctor."
+    ):''}`;
+  setNav(true,ans);
+},
+
+scene2(){
+  setBG('street');
+  C.innerHTML=`<div class="vn-scene">
+    ${charLayla('right')}
+    ${charDina('left')}
+    ${dlg('LAYLA',"Good. Now we go deeper. Knowing the age range isn't enough. We need to understand what they feel.")}
+    ${dlg('DINA',"I always ask: what do you want someone to feel the moment they see this campaign? Not think — feel. That one word changes everything.",.12)}
+  </div>`;
+  setNav(true,true);
+},
+
+reflect1(){
+  setBG('street');
+  const saved=S.feelSaved;
+  C.innerHTML=`
+    <div class="mhdr"><div class="mlbl">● REFLECT</div><div class="mtitle">What should Nafas's audience feel?</div><span class="spill">Skill: Creative Thinking</span></div>
+    <div class="vn-scenario" style="margin:10px 10px 8px">A 17-year-old is scrolling at midnight. They see the Nafas campaign. In that moment — what do you want them to feel? There's no wrong answer here. This is your creative instinct speaking.</div>
+    <div class="ropts">
+      ${Object.entries(FEEL_OPTS).map(([id,o])=>`
+        <button class="ropt ${S.feel===id?'sel':''}" data-f="feel" onclick="pickR('feel','${id}',this)" ${saved?'disabled':''}>
+          <strong>${o.l}</strong><br><span style="font-size:11px;color:#9CA3AF">${o.d}</span>
+        </button>`).join('')}
+    </div>
+    ${!saved?`<button class="rconf" id="rconf_feel" style="display:${S.feel?'block':'none'}" onclick="saveR('feel')">Lock in my answer →</button>`:''}
+    ${saved?`<div class="rsaved">✦ Saved to your Creative Brief — "<em>${FEEL_OPTS[S.feel]?.l||''}</em>"</div>`:''}`;
+  setNav(true,saved,'Continue →');
+},
+
+scene3(){
+  setBG('rooftop');
+  const feel=FEEL_OPTS[S.feel];
+  C.innerHTML=`<div class="vn-scene">
+    ${charDina('left')}
+    <div class="snote-vn">📍 Rooftop of El Warsha. Dina looks out at the city.</div>
+    ${dlg('DINA',feel?`"${feel.l.replace(/^[^ ]+ /,'')}" — I like that. That's your creative compass now. Every choice you make about this campaign should point back to that feeling.`:"Good. Hold onto that feeling — it's the compass for every creative decision you'll make.")}
+    ${dlg('DINA',"Now Karim wants to show you something. He found two campaigns — totally different approaches. One of them works. One doesn't. Can you spot which?",.12)}
+  </div>`;
+  setNav(true,true);
+},
+
+q2(){
+  setBG('rooftop');
+  const ans=S.a2!==null;
+  C.innerHTML=`
+    <div class="mhdr"><div class="mlbl">● QUESTION 2</div><div class="mtitle">Two campaigns, same topic — which one works?</div><span class="spill">Skill: Problem Solving</span></div>
+    <div class="vn-scene" style="min-height:160px">
+      ${charKarim('left')}
+      <div class="vn-scenario">
+        <strong>Campaign A:</strong> A poster with statistics. "1 in 4 young Egyptians experience mental health challenges. Seek help now." Clear, factual, official.<br><br>
+        <strong>Campaign B:</strong> A photo of a teenager's bedroom ceiling at 2am with the words: "أنت مش لوحدك." (You're not alone.) No logo. No statistics. Just that.
+      </div>
+      <div class="vn-question">WHICH CAMPAIGN ACTUALLY REACHES A STRUGGLING 17-YEAR-OLD?</div>
+    </div>
+    <div class="choices">${opts([
+      {id:'a',text:'Campaign A — facts and statistics are more credible and convincing'},
+      {id:'b',text:'Campaign B — it speaks to a feeling, not a problem to be solved'},
+      {id:'c',text:'They\'re equally effective — different people respond to different things'},
+      {id:'d',text:'Neither — they both need a clearer call to action first'}
+    ],S.a2,'b',ans)}</div>
+    ${ans?fb(S.c2,
+      "Campaign B works because it doesn't explain — it connects. A teenager at 2am doesn't need a statistic. They need to feel recognised in that exact moment. That's what good creative does.",
+      "Think about the moment of contact — a teenager at 2am, scrolling, feeling alone. What lands in that specific moment?",
+      S.a2==='a'?"Statistics inform — they rarely move people emotionally. The barrier isn't information, it's shame.":S.a2==='c'?"They're not equally effective for this specific audience and brief — know your person.":"A call to action comes after you've earned someone's trust, not before."
+    ):''}`;
+  setNav(true,ans);
+},
+
+scene4(){
+  setBG('rooftop');
+  C.innerHTML=`<div class="vn-scene">
+    ${charKarim('left')}
+    ${charDina('right')}
+    ${dlg('KARIM',"See it? Campaign B doesn't explain mental health. It just says: I see you. That's the whole thing.")}
+    ${dlg('DINA',"And that's because whoever made it knew their audience so well, they knew what those four words would mean at 2am.",.12)}
+    ${dlg('LAYLA',"Your turn. You've built an audience profile — you know who they are and what you want them to feel. Now describe them in your own words.",.2)}
+  </div>`;
+  if(!S.badges.includes('💡'))S.badges.push('💡');
+  setNav(true,true);
+},
+
+input1(){
+  setBG('rooftop');
+  const saved=S.inpSaved;
+  C.innerHTML=`
+    <div class="mhdr"><div class="mlbl">● YOUR ARTIFACT</div><div class="mtitle">Describe your audience in your own words</div><span class="spill">Skill: Communication</span></div>
+    <div class="vn-scenario" style="margin:10px 10px 8px">Who is the specific person this campaign is for? Describe them — not as a demographic, but as a real human. What's their day like? What do they feel? Why won't they ask for help yet? Write 2–3 sentences. This goes straight into your Creative Brief.</div>
+    <div class="tinput-wrap">
+      <textarea class="tinput" id="tinp_inp1" placeholder="The person I'm making this for is…" ${saved?'disabled':''}>${S.inp||''}</textarea>
+      ${!saved?`<button class="tconf" id="tconf_inp1" onclick="saveInp('inp1')" ${S.inp?'':'disabled'}>Save to my brief →</button>`:''}
+    </div>
+    ${saved?`<div class="tsaved">✦ Saved — this is Section 1 of your Creative Brief</div>`:''}`;
+  if(!saved){
+    setTimeout(()=>{
+      const ta=document.getElementById('tinp_inp1');
+      const btn=document.getElementById('tconf_inp1');
+      if(ta&&btn)ta.oninput=()=>{S.inp=ta.value;btn.disabled=!ta.value.trim();}
+    },100);
+  }
+  setNav(true,saved,'Continue →');
+},
+
+scene5(){
+  setBG('reveal');
+  C.innerHTML=`<div class="vn-scene">
+    ${charDina('left')}
+    <div class="snote-vn">📍 Back inside El Warsha. Dina pins the audience brief to the board.</div>
+    ${dlg('DINA',"This is what every good campaign starts with. Not a logo. Not a colour palette. A real person.")}
+    ${dlg('DINA',"You've completed Part 1. Your audience is locked. In Mission 2, you'll find the creative angle — the unexpected way into this story that makes people stop scrolling.",.15)}
+  </div>`;
+  setNav(true,true);
+},
+
+q3(){
+  setBG('reveal');
+  const ans=S.a3!==null;
+  C.innerHTML=`
+    <div class="mhdr"><div class="mlbl">● FINAL CHALLENGE</div><div class="mtitle">One last question before you finish</div><span class="spill">Skill: Problem Solving</span></div>
+    <div class="vn-scene" style="min-height:160px">
+      ${charLayla('right')}
+      ${dlg('LAYLA',"Before you go — quick one. Nafas asks you: 'Should we add more statistics to make the campaign more credible?' What do you say?")}
+    </div>
+    <div class="choices">${opts([
+      {id:'a',text:"Yes — facts make a campaign trustworthy"},
+      {id:'b',text:"Maybe one statistic if it's surprising — but the emotional connection comes first"},
+      {id:'c',text:"No statistics at all — emotions are the only language that works"},
+      {id:'d',text:"Yes, the more data the better — show you've done the research"}
+    ],S.a3,'b',ans)}</div>
+    ${ans?fb(S.c3,
+      "Right balance. One surprising fact can stop someone — but only after you've already made them feel something. Credibility without connection is just noise.",
+      "Think about what comes first — connection or credibility?",
+      S.a3==='a'?"Facts alone don't move people who are avoiding the topic.":S.a3==='c'?"Emotion alone can feel unsubstantiated. One sharp statistic can validate the feeling.":"More data = less feeling. You'd lose the 2am moment."
+    ):''}`;
+  setNav(true,ans);
+},
+
+output(){
+  setBG('reveal');
+  const feel=FEEL_OPTS[S.feel];
+  C.innerHTML=`<div class="fullscreen">
+    <div style="width:100%;text-align:left;margin-bottom:12px">
+      <div class="obt">✦ CREATIVE BRIEF — SECTION 1 OF 3</div>
+      <div class="otitle">My Audience Profile</div>
+      <div class="ointro">This is what you built in Mission 1. It carries forward to Missions 2 and 3.</div>
+    </div>
+    <div class="pbsec">
+      <div class="pblbl">CLIENT</div>
+      <div class="pbval">Nafas (نَفَس) — Youth Mental Health NGO</div>
+      <div class="pbdesc">Cairo, Egypt. Zero budget. One message for the world.</div>
+    </div>
+    <div class="pbsec">
+      <div class="pblbl">TARGET AUDIENCE</div>
+      <div class="pbval">Young Egyptians aged 14–25 — struggling, but not talking about it</div>
+      <div class="pbdesc">They feel embarrassed to ask for help. They scroll alone at night. They need to feel seen before they'll engage.</div>
+    </div>
+    <div class="pbsec" style="border-color:rgba(255,184,48,.3)">
+      <div class="pblbl">THE ONE FEELING</div>
+      <div class="pbval">${feel?feel.l:'—'}</div>
+      <div class="pbdesc">${feel?feel.d:'Your creative compass for this campaign.'}</div>
+    </div>
+    <div class="pbsec" style="border-color:rgba(168,85,247,.3)">
+      <div class="pblbl">YOUR AUDIENCE IN YOUR WORDS</div>
+      <div class="pbval" style="font-size:13px;font-weight:400;line-height:1.7;color:rgba(255,255,255,.85)">${S.inp||'—'}</div>
+    </div>
+    <button class="btn-dl" onclick="downloadBrief()">⬇ Download Section 1 as PDF</button>
+  </div>`;
+  setNav(true,true,'See my results →');
+},
+
+final(){
+  setBG('reveal');
+  C.innerHTML=`<div class="finalwrap">
+    <div class="ficon">🎨</div>
+    <div style="font-family:var(--fh);font-size:8px;letter-spacing:2px;color:var(--amber);margin-bottom:6px">MISSION 1 COMPLETE</div>
+    <div class="ftitle">Audience Unlocked</div>
+    <div class="fsub">You know who you're talking to. That's the foundation everything else is built on.</div>
+    <div class="skill-pills">
+      <span class="spill2 building">💡 Problem Solving — Building</span>
+      <span class="spill2 exploring">🎨 Creative Thinking — Exploring</span>
+      <span class="spill2 exploring">✍️ Communication — Exploring</span>
+    </div>
+    <div class="allb">
+      <div class="abi"><div class="abic">🎨</div><div class="abn">Audience Badge</div></div>
+      <div class="abi"><div class="abic">💡</div><div class="abn">Insight Badge</div></div>
+      <div class="abi"><div class="abic">✍️</div><div class="abn">Voice Badge</div></div>
+    </div>
+    <div class="panel" style="max-width:420px;text-align:left">
+      ${dlg('DINA',"Section 1 of your Creative Brief is ready. In Mission 2, Karim will challenge you to find the creative angle. The unexpected idea that makes people stop.")}
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">
+      <button class="btn-dl" onclick="downloadBrief()">⬇ Download Creative Brief — Section 1</button>
+    </div>
+  </div>`;
+  setNav(false,false);
+}
+};
+
+/* ── PDF DOWNLOAD ── */
+function downloadBrief(){
+  const feel=FEEL_OPTS[S.feel];
+  const content=`EL WARSHA × NOOR
+Creative Brief — Section 1 of 3
+Mission: Who Are You Talking To?
+================================
+
+CLIENT
+Nafas (نَفَس) — Youth Mental Health NGO
+Cairo, Egypt. Zero budget. One message for the world.
+
+TARGET AUDIENCE
+Young Egyptians aged 14–25 — struggling, but not talking about it
+They feel embarrassed to ask for help. They scroll alone at night.
+They need to feel seen before they'll engage.
+
+THE ONE FEELING
+${feel?feel.l:'—'}
+${feel?feel.d:''}
+
+YOUR AUDIENCE IN YOUR OWN WORDS
+${S.inp||'(not completed)'}
+
+================================
+Score: ${S.pts} pts
+Skills recorded: Problem Solving (Building) · Creative Thinking (Exploring) · Communication (Exploring)
+`;
+  const blob=new Blob([content],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='Noor_CreativeBrief_Section1.txt';
+  a.click();
+}
+
+render();
+</script>
+</body>
+</html>
